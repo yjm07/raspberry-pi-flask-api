@@ -1,7 +1,7 @@
-import script.ble_scan as bl
-import script.wifi_scan as wf
-import script.modi_scan as md
-import script.connected_wifi as c_wf
+import berry.script.ble_scan as bl
+import berry.script.wifi_scan as wf
+import berry.script.modi_scan as md
+import berry.script.connected_wifi as c_wf
 
 
 def ble_list():
