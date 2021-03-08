@@ -1,0 +1,8 @@
+__title__ = "API for Smart AI"
+__version__ = "0.0.1"
+__author__ = "LUXROBO"
+__email__ = "tech@luxrobo.com"
+__description__ = "Python API for controlling Smart AI module with raspberry pi"
+__url__ = "https://github.com/LUXROBO/smart-ai-api"
+__license__ = "MIT"
+__summary__ = "Python API for controlling Smart AI module"
