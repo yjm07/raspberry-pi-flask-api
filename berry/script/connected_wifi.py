@@ -3,7 +3,7 @@ import subprocess
 
 def connected_wifi():
 
-    proc = subprocess.Popen("iw wlan0 link | egrep 'SSID|freq|signal' | cut -d ' ' -f 2",
+    proc = subprocess.Popen("iw wlan0 link | egrep 'SSID|signal' | cut -d ' ' -f 2",
                             shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     stdout, stderr = proc.communicate()
     output = stdout.decode()
@@ -13,6 +13,6 @@ def connected_wifi():
         return stderr.decode()
 
     if len(output) == 0:
-        return "Not connected"
+        return "Not connected."
         
     return output.split()
