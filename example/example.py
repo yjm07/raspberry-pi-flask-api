@@ -30,7 +30,8 @@ if __name__ == "__main__":
         "ip_addr" : "172.xx.xx.xx"
     }
     """
-
+    
+    # scan ble
     modi_ble_scan = ble.scan()
     print(modi_ble_scan) 
     """json
@@ -39,6 +40,7 @@ if __name__ == "__main__":
     }
     """
 
+    # display connected modi module
     modi_list = rpi_modi.scan(conn_type="can")    # can, ble, ser
     print(modi_list)
     """json
@@ -50,3 +52,4 @@ if __name__ == "__main__":
             }
         }
     """
+
