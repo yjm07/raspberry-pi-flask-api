@@ -33,13 +33,13 @@ def scan_wifi():
         # quality parsing
         info[1] = info[1].split('=')[1].split('/')[0]
 
-        # if same ssid, different frequency(2G, 5G)
-        if ssid in _list and _list[ssid][0] != info[0]:
-            ch_ssid = ssid + '_5G'
-            if _list[ssid][0] == '5':
-                _list[ch_ssid] = _list[ssid]
-            elif info[0] == '5':
-                ssid = ch_ssid
+        # # if same ssid, different frequency(2G, 5G)
+        # if ssid in _list and _list[ssid][0] != info[0]:
+        #     ch_ssid = ssid + '_5G'
+        #     if _list[ssid][0] == '5':
+        #         _list[ch_ssid] = _list[ssid]
+        #     elif info[0] == '5':
+        #         ssid = ch_ssid
 
         _list[ssid] = info
 
