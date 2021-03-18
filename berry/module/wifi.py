@@ -6,24 +6,24 @@ from time import sleep
 
 class Wifi:
     """
-    A module to connect to wifi.
-    Usage: 
-        connect(ssid, psw, reconnect_opt)
+    A module for Raspberry Pi wifi(interface: wlan0).
+    Usage:
+        connect(ssid, psw, auto_reconnect_option)
         scan()
+        info()
     """
-
-    # !Todo: path fix
-    wpa_supplicant_conf = '/etc/wpa_supplicant/wpa_supplicant.conf'
-    temp_conf = '../script/temp.conf'
-    temp_orign_conf = '../script/temp_origin.conf'
-
     def __init__(self, user_dir:str):
         self.user_directory = user_dir
         self.ssid_list = set()
+        # TODO: path fix
+        self.wpa_supplicant_conf = '/etc/wpa_supplicant/wpa_supplicant.conf'
+        self.temp_conf = '../script/temp.conf'
+        self.temp_orign_conf = '../script/temp_origin.conf'
+
 
     def connect(self, ssid, psw, auto_reconnect):
         """
-        Main method for connecting wifi.
+        Connect to ssid via psw. Auto_reconnect option needed.
         Input: {'ssid': string, 'password': string, 'auto_reconnect': boolean}
         Output: json
         {
@@ -69,7 +69,7 @@ class Wifi:
         
         return json.dumps(output, indent=4, ensure_ascii=False)
 
-        # !Todo: auto_reconnect option
+        # TODO: auto_reconnect option
         # if auto_reconnect:
         #     ssid_list.remove(ssid)
         #     _remove_wpa_cli(id)
@@ -177,13 +177,13 @@ class Wifi:
 
     def scan(self):
         """
-        Main method for scanning wifi.
+        Scan available wifi list.
         Input: None
         Ouput: json
         {
             "SSID": {                       // Wifi name
-                "frequency": string,           // 2.4Ghz: 2, 5Ghz: 5
-                "intensity": string,           // 0 ~ 70
+                "frequency": string,        // 2.4Ghz: 2, 5Ghz: 5
+                "intensity": string,        // 0 ~ 70
                 "psk requirement": string   // public: off, private: on
             } 
         }
@@ -269,8 +269,13 @@ class Wifi:
         elif True:
             return None
 
-    # Return SSID, intensity of connected wifi
+
     def info(self):
+        """
+        SSID, intensity of connected wifi.
+        Input: None
+        Ouput: json {"SSID": string, "intensity": string}
+        """
         proc = subprocess.Popen("iw wlan0 link | egrep 'SSID|signal' | cut -d ' ' -f 2",
                                 shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         stdout, stderr = proc.communicate()
@@ -293,13 +298,7 @@ class Wifi:
             
         return json.dumps(output_list, ensure_ascii=False)
 
-
-if __name__ == '__main__':
-    wf = Wifi('home/pi/smart-ai-api/berry/module/')
-    ssid = input()
-    psw = input()
-    result = wf.connect(ssid, psw, True)
     # result = wf._ip_wpa_cli()
     # result = wf.info()
     # result = wf.scan()
-    print(result)
+    # print(result)
