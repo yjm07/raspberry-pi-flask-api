@@ -16,6 +16,10 @@ function watch {
                 echo "incorrect key"
                 return
             ;;
+            *'CTRL-EVENT-NETWORK-NOT-FOUND'*)
+                echo "network not found"
+                return
+            ;;
             *'CTRL-EVENT-CONNECTED'*)
                 echo "connected"
                 return
