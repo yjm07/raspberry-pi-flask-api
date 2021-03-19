@@ -1,12 +1,12 @@
-import subprocess
+from subprocess import Popen, PIPE
+from time import sleep
 import re
 import json
-from time import sleep
 
 
 class Wifi:
-    """
-    A module for Raspberry Pi wifi(interface: wlan0).
+    """ A module for Raspberry Pi wifi(interface: wlan0).
+
     Usage:
         connect(ssid, psw, auto_reconnect_option)
         scan()
@@ -20,19 +20,18 @@ class Wifi:
         self.temp_conf = '../script/temp.conf'
         self.temp_orign_conf = '../script/temp_origin.conf'
 
-
     def connect(self, ssid, psw, auto_reconnect):
-        """
-        Connect to ssid via psw. Auto_reconnect option needed.
-        Input: {'ssid': string, 'password': string, 'auto_reconnect': boolean}
-        Output: json
+        """ Connect to ssid via psw. Auto_reconnect option needed.
+
+        :param: {'ssid': string, 'password': string, 'auto_reconnect': boolean}
+        :return: json
         {
             "status": boolean,     // connected: true,         failed: false
             "ssid": string,        // connected: Wifi name,    failed: null
-            "ip_address": string   // connected: 172.xx.xx.xx, failed: null
+            "ip address": string   // connected: 172.xx.xx.xx, failed: null
         }
         """
-        output = dict([('status', None), ('ssid', None), ('ip_address', None)])
+        output = dict()
 
         # If already known, use wpa_cli
         if self._is_known_wifi(ssid):
@@ -65,71 +64,73 @@ class Wifi:
                 print("wrong psw")
                 output['status'] = False
 
+            # Return temp.conf to initial state
             self._flush(self.temp_conf)
         
+        # Auto_reconnect option
+        id = self._id_wpa_cli(ssid)
+        if not auto_reconnect:
+            self._disable_wpa_cli(id)
+        else:
+            self._enable_wpa_cli(id)
+
         return json.dumps(output, indent=4, ensure_ascii=False)
 
-        # TODO: auto_reconnect option
-        # if auto_reconnect:
-        #     ssid_list.remove(ssid)
-        #     _remove_wpa_cli(id)
-        # else:
-
-    # Check ssid list if already known
+    # Check if ssid is known
     def _is_known_wifi(self, ssid):
         return ssid in self.ssid_list
 
     # Flush temp_wpa_supplicant.conf back to the state before
     def _flush(self, dir):
-        subprocess.call(['sudo', 'cp', self.temp_orign_conf, dir])
+        proc = Popen(['sudo', 'cp', self.temp_orign_conf, dir])
+        proc.wait()
 
     # Reconfigure wpa_cli to update wpa_supplicant.conf and check psk
     def _is_psk_right(self):
-        subprocess.call('wpa_cli -iwlan0 reconfigure > /dev/null', shell=True)
-        sleep(1)
-        proc = subprocess.Popen(['../script/wpa.sh'],
-                                stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        stdout, stderr = proc.communicate()
+        proc = Popen('wpa_cli -iwlan0 reconfigure > /dev/null', shell=True)
         proc.wait()
+        sleep(1)
+        proc = Popen(['../script/wpa.sh'], stdout=PIPE, stderr=PIPE)
+        stdout, stderr = proc.communicate()
 
-        if stderr != b'':
+        if stderr:
             print(stderr.decode())
         else:
             return stdout.decode().rstrip()
 
     # Connect to network of the id with wpa_cli
     def _connect_wpa_cli(self, id):
-        subprocess.call(['wpa_cli', '-i', 'wlan0', 'select_network', id])
+        proc = Popen(['wpa_cli', '-i', 'wlan0', 'select_network', id])
+        proc.wait()
 
     # Remove id from wpa_cli list
     def _remove_wpa_cli(self, id):
-        subprocess.call(['wpa_cli', '-i', 'wlan0', 'remove_network', id])
+        proc = Popen(['wpa_cli', '-i', 'wlan0', 'remove_network', id])
+        proc.wait()
 
     # Get id of the ssid from wpa_cli list
     def _id_wpa_cli(self, ssid):
-        proc = subprocess.Popen(f'wpa_cli -iwlan0 list_networks | grep {ssid}',
-                                shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        proc = Popen(f'wpa_cli -iwlan0 list_networks | grep {ssid}',
+                    shell=True, stdout=PIPE, stderr=PIPE)
         stdout, stderr = proc.communicate()
         output = stdout.decode()
-        proc.wait()
 
-        if stderr != b'':
+        if stderr:
             print(stderr.decode())
         if not len(stdout):
             return -1
         return output.split()[0]
     
-    # Get ip of connected wifi
+    # Get ip address of connected wifi
     def _ip_wpa_cli(self):
         while True:
             sleep(1)
-            proc = subprocess.Popen(f'wpa_cli -iwlan0 status | fgrep -A 1 wpa_state | cut -d "=" -f 2',
-                                    shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            proc = Popen(f'wpa_cli -iwlan0 status | fgrep -A 1 wpa_state | cut -d "=" -f 2',
+                        shell=True, stdout=PIPE, stderr=PIPE)
             stdout, stderr = proc.communicate()
             output = stdout.decode()
-            proc.wait()
 
-            if stderr != b'':
+            if stderr:
                 print(stderr.decode())
 
             list_ = output.split()
@@ -138,64 +139,78 @@ class Wifi:
             if list_[0] != 'COMPLETED' and list_[0] != 'ASSOCIATING':
                 return -1
             
+            # Ip address is not shown yet
             if list_[1].find('.') != -1:
                 return list_[1]
 
+    # Disable network in wpa_cli list
+    def _disable_wpa_cli(self, id):
+        proc1 = Popen(f'wpa_cli -iwlan0 disable {id} > /dev/null', shell=True)
+        proc1.wait()
+        proc2 = Popen('wpa_cli -iwlan0 save_config > /dev/null', shell=True)
+        proc2.wait()
+
+    # Enable network in wpa_cli list
+    def _enable_wpa_cli(self, id):
+        proc1 = Popen(f'wpa_cli -iwlan0 enable {id} > /dev/null', shell=True)
+        proc1.wait()
+        proc2 = Popen('wpa_cli -iwlan0 save_config > /dev/null', shell=True)
+        proc2.wait()
+
     # Kill and reconnect wpa_supplicant
     def _reconnect_wpa_supplicant(self, dir):
-        MyOut1 = subprocess.Popen(['sudo', 'killall', 'wpa_supplicant'])
+        MyOut1 = Popen(['sudo', 'killall', 'wpa_supplicant'])
         MyOut1.wait()
         sleep(1)
 
-        MyOut2 = subprocess.Popen(['sudo', 'wpa_supplicant','-B', '-iwlan0', '-c', dir, '-f/var/log/wpa_supplicant.log'])
+        MyOut2 = Popen(['sudo', 'wpa_supplicant','-B', '-iwlan0', '-c', dir, '-f/var/log/wpa_supplicant.log'])
         MyOut2.wait()
         sleep(1)
         print(f'{dir} connected')
 
-    # Run dhclient
+    # Connect dhclient
     def _dhclient_connect(self):
-        MyOut = subprocess.Popen(['sudo', 'dhclient',  'wlan0'])
+        MyOut = Popen(['sudo', 'dhclient',  'wlan0'])
         MyOut.wait()
         sleep(1)
         print('dhclient connected')
 
     # Write ssid and password to wpa_supplicant.conf of the directory
     def _write_wpa_supplicant(self, ssid, psw, dir):
-        proc = subprocess.Popen(f"wpa_passphrase '{ssid}' {psw} | sudo tee -a {dir}", 
-                                shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-        stdout, stderr = proc.communicate()
+        proc = Popen(f"wpa_passphrase '{ssid}' {psw} | sudo tee -a {dir}", shell=True)
         proc.wait()
         print('write wpa end')
 
     # Set the priority of the id in wpa_cli list
     def _set_priority(self, id, priority):
-        subprocess.call(['wpa_cli', '-i', 'wlan0', 'set_network', id, 'priority', priority])
+        proc = Popen(f'wpa_cli -iwlan0 set_network {id} priority {priority} > /dev/null', shell=True)
+        proc.wait()
         sleep(1)
-        subprocess.call(['wpa_cli', '-i', 'wlan0', 'save_config'])
+        proc = Popen('wpa_cli -iwlan0 save_config > /dev/null', shell=True)
+        proc.wait()
         sleep(1)
-
 
     def scan(self):
-        """
-        Scan available wifi list.
-        Input: None
-        Ouput: json
+        """ Scan available wifi list.
+
+        :param: None
+        :return: json
         {
             "SSID": {                       // Wifi name
                 "frequency": string,        // 2.4Ghz: 2, 5Ghz: 5
                 "intensity": string,        // 0 ~ 70
                 "psk requirement": string   // public: off, private: on
-            } 
+            }
         }
         """
-        proc = subprocess.Popen("sudo iwlist wlan0 scan | fgrep -B 3 ESSID | cut -d ':' -f 2 | awk '{print$1}'", 
-                                shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        proc = Popen("sudo iwlist wlan0 scan | fgrep -B 3 ESSID | cut -d ':' -f 2 | awk '{print$1}'",
+                    shell=True, stdout=PIPE, stderr=PIPE)
         stdout, stderr = proc.communicate()
         output = stdout.decode()
 
         dict_ = dict()
 
-        if stderr != b'':
+        if stderr:
             dict_['error'] = stderr.decode()
             return dict_
 
@@ -227,7 +242,6 @@ class Wifi:
         # Dictionary to json
         json_list = json.dumps(dict_, indent=4, ensure_ascii=False)
 
-        print(json_list)
         return json_list
 
     # Encode Utf-8 to string
@@ -269,36 +283,31 @@ class Wifi:
         elif True:
             return None
 
-
     def info(self):
+        """ SSID, intensity of connected wifi.
+
+        :param: None
+        :return: connected: json {"ssid": string, "intensity": string}
+                 not connected: string "Not connected"
         """
-        SSID, intensity of connected wifi.
-        Input: None
-        Ouput: json {"SSID": string, "intensity": string}
-        """
-        proc = subprocess.Popen("iw wlan0 link | egrep 'SSID|signal' | cut -d ' ' -f 2",
-                                shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        proc = Popen("iw wlan0 link | egrep 'SSID|signal' | cut -d ' ' -f 2",
+                    shell=True, stdout=PIPE, stderr=PIPE)
         stdout, stderr = proc.communicate()
         output = stdout.decode()
 
         # If error
-        if stderr != b'':
+        if stderr:
             return stderr.decode()
 
-        if len(output) == 0:
-            return "Not connected."
+        if not output:
+            return "Not connected"
 
         # Intensity unit change(Max 70)
         list_ = output.split()
         list_[1] = str(int(list_[1]) + 110)
 
         # Type change list to dictionary
-        temp_list = ['SSID', 'intensity']
+        temp_list = ['ssid', 'intensity']
         output_list = dict(zip(temp_list, list_))
             
         return json.dumps(output_list, ensure_ascii=False)
-
-    # result = wf._ip_wpa_cli()
-    # result = wf.info()
-    # result = wf.scan()
-    # print(result)
