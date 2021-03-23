@@ -2,9 +2,10 @@ from subprocess import Popen, PIPE
 from time import sleep
 import re
 import json
+import logging
 
 
-class Wifi:
+class WifiHandler:
     """ A module for Raspberry Pi wifi(interface: wlan0).
 
     Usage:
@@ -15,10 +16,27 @@ class Wifi:
     def __init__(self, user_dir:str):
         self.user_directory = user_dir
         self.ssid_list = set()
+        self.logger = self.__init_logger()
         # TODO: path fix
         self.wpa_supplicant_conf = '/etc/wpa_supplicant/wpa_supplicant.conf'
         self.temp_conf = '../script/temp.conf'
         self.temp_orign_conf = '../script/temp_origin.conf'
+
+    @staticmethod
+    def __init_logger():
+        logger = logging.getLogger('Dashboard Wifi Logger')
+        logger.setLevel(logging.INFO)
+
+        stream_handler = logging.StreamHandler()
+        stream_handler.setLevel(logging.INFO)
+        logger.addHandler(stream_handler)
+
+        # formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        # file_handler = logging.FileHandler('/var/log/wifi.log')
+        # file_handler.setLevel(logging.INFO)
+        # file_handler.setFormatter(formatter)
+        # logger.addHandler(file_handler)
+        return logger
 
     def connect(self, ssid, psw, auto_reconnect):
         """ Connect to ssid via psw. Auto_reconnect option needed.
@@ -35,6 +53,7 @@ class Wifi:
 
         # If already known, use wpa_cli
         if self._is_known_wifi(ssid):
+            self.logger.info("known ssid")
             id = self._id_wpa_cli(ssid)
             self._connect_wpa_cli(id)
         # Write to temp_wpa_supplicant.conf and check if psw is right
@@ -42,10 +61,8 @@ class Wifi:
             self._write_wpa_supplicant(ssid, psw, self.temp_conf)
             self._reconnect_wpa_supplicant(self.temp_conf)
 
-            psw_right = self._is_psk_right()
-
             # If psw is right, add ssid to list and write to wpa_supplicant.conf
-            if psw_right == 'connected':
+            if self._is_psk_right() == 'connected':
                 self.ssid_list.add(ssid)
                 self._write_wpa_supplicant(ssid, psw, self.wpa_supplicant_conf)
                 self._reconnect_wpa_supplicant(self.wpa_supplicant_conf)
@@ -53,7 +70,7 @@ class Wifi:
                 # Set priority of newly added ssid
                 id = self._id_wpa_cli(ssid)
                 self._set_priority(id, id)
-                print("connected")
+                self.logger.info("connected")
 
                 output['status'] = True
                 output['ssid'] = ssid
@@ -61,14 +78,15 @@ class Wifi:
             # If psw is wrong, just reconnect to wpa_supplicant.conf
             else:
                 self._reconnect_wpa_supplicant(self.wpa_supplicant_conf)
-                print("wrong psw")
+                self.logger.info("wrong psw")
                 output['status'] = False
 
             # Return temp.conf to initial state
-            self._flush(self.temp_conf)
+            self._erase_conf(self.temp_conf)
         
         # Auto_reconnect option
         id = self._id_wpa_cli(ssid)
+        self.logger.info(f"id: {id}, auto connect option: {auto_reconnect}")
         if not auto_reconnect:
             self._disable_wpa_cli(id)
         else:
@@ -81,7 +99,7 @@ class Wifi:
         return ssid in self.ssid_list
 
     # Flush temp_wpa_supplicant.conf back to the state before
-    def _flush(self, dir):
+    def _erase_conf(self, dir):
         proc = Popen(['sudo', 'cp', self.temp_orign_conf, dir])
         proc.wait()
 
@@ -94,9 +112,10 @@ class Wifi:
         stdout, stderr = proc.communicate()
 
         if stderr:
-            print(stderr.decode())
-        else:
-            return stdout.decode().rstrip()
+            self.logger.info(stderr.decode())
+            return
+
+        return stdout.decode().rstrip()
 
     # Connect to network of the id with wpa_cli
     def _connect_wpa_cli(self, id):
@@ -116,8 +135,10 @@ class Wifi:
         output = stdout.decode()
 
         if stderr:
-            print(stderr.decode())
+            self.logger.info(stderr.decode())
+            return
         if not len(stdout):
+            self.logger.info(f"{ssid} is not known")
             return -1
         return output.split()[0]
     
@@ -131,17 +152,20 @@ class Wifi:
             output = stdout.decode()
 
             if stderr:
-                print(stderr.decode())
+                self.logger.info(stderr.decode())
+                return
 
             list_ = output.split()
 
             # Wifi not connected
             if list_[0] != 'COMPLETED' and list_[0] != 'ASSOCIATING':
+                self.logger.info("wifi is not connected")
                 return -1
             
             # Ip address is not shown yet
             if list_[1].find('.') != -1:
                 return list_[1]
+            self.logger.info("checking ip address")
 
     # Disable network in wpa_cli list
     def _disable_wpa_cli(self, id):
@@ -149,6 +173,7 @@ class Wifi:
         proc1.wait()
         proc2 = Popen('wpa_cli -iwlan0 save_config > /dev/null', shell=True)
         proc2.wait()
+        self.logger.info(f"disabled wpa cli id {id}")
 
     # Enable network in wpa_cli list
     def _enable_wpa_cli(self, id):
@@ -156,6 +181,7 @@ class Wifi:
         proc1.wait()
         proc2 = Popen('wpa_cli -iwlan0 save_config > /dev/null', shell=True)
         proc2.wait()
+        self.logger.info(f"enabled wpa cli id {id}")
 
     # Kill and reconnect wpa_supplicant
     def _reconnect_wpa_supplicant(self, dir):
@@ -166,20 +192,20 @@ class Wifi:
         MyOut2 = Popen(['sudo', 'wpa_supplicant','-B', '-iwlan0', '-c', dir, '-f/var/log/wpa_supplicant.log'])
         MyOut2.wait()
         sleep(1)
-        print(f'{dir} connected')
+        self.logger.info(f"wpa supplicant connected {dir}")
 
     # Connect dhclient
     def _dhclient_connect(self):
         MyOut = Popen(['sudo', 'dhclient',  'wlan0'])
         MyOut.wait()
         sleep(1)
-        print('dhclient connected')
+        self.logger.info("dhclient connected")
 
     # Write ssid and password to wpa_supplicant.conf of the directory
     def _write_wpa_supplicant(self, ssid, psw, dir):
         proc = Popen(f"wpa_passphrase '{ssid}' {psw} | sudo tee -a {dir}", shell=True)
         proc.wait()
-        print('write wpa end')
+        self.logger.info("wpa supplicant write done")
 
     # Set the priority of the id in wpa_cli list
     def _set_priority(self, id, priority):
@@ -189,6 +215,7 @@ class Wifi:
         proc = Popen('wpa_cli -iwlan0 save_config > /dev/null', shell=True)
         proc.wait()
         sleep(1)
+        self.logger.info("set priority done")
 
     def scan(self):
         """ Scan available wifi list.
@@ -196,11 +223,12 @@ class Wifi:
         :param: None
         :return: json
         {
-            "SSID": {                       // Wifi name
+            {   
+                "ssid": string,             // Wifi name
                 "frequency": string,        // 2.4Ghz: 2, 5Ghz: 5
                 "intensity": string,        // 0 ~ 70
                 "psk requirement": string   // public: off, private: on
-            }
+            },
         }
         """
         proc = Popen("sudo iwlist wlan0 scan | fgrep -B 3 ESSID | cut -d ':' -f 2 | awk '{print$1}'",
@@ -208,11 +236,11 @@ class Wifi:
         stdout, stderr = proc.communicate()
         output = stdout.decode()
 
-        dict_ = dict()
+        list_ = list()
 
         if stderr:
-            dict_['error'] = stderr.decode()
-            return dict_
+            self.logger.info(stderr.decode())
+            return
 
         for text in output.split('--'):
             line = text.split('\"')
@@ -220,27 +248,38 @@ class Wifi:
             ssid = line[1]
 
             # If no ssid
-            if not ssid: continue
+            if not ssid:
+                continue
+            
+            # If same ssid
+            repeat = False
+            for i in list_:
+                if ssid in i.values():
+                    repeat = True
+            if repeat:
+                continue
 
             # If character has unicode(UTF-8)
             numbers = re.findall('\\\\x[0-9a-fA-F][0-9a-fA-F]', ssid)
             if len(numbers):
                 ssid = self._utf8_to_str(ssid, numbers)
+                self.logger.info("unicode encoding done")
 
             # Frequency & Intensity parsing
             info[0] = info[0].split('.')[0]
             info[1] = info[1].split('=')[1].split('/')[0]
-            
-            # Type change 'info' to dictionary
-            temp_list = ['frequecy', 'intensity', 'psk requirement']
+
+            # Type change 'ssid' & 'info' to dictionary
+            info.insert(0, ssid)
+            temp_list = ['ssid', 'frequecy', 'intensity', 'psk requirement']
             dict_info = dict(zip(temp_list, info))
-            
-            dict_[ssid] = dict_info
+
+            list_.append(dict_info)
 
         # Sorting by quality
-        dict_ = dict(sorted(dict_.items(), key=lambda x: x[1]['intensity'], reverse=True))
-        # Dictionary to json
-        json_list = json.dumps(dict_, indent=4, ensure_ascii=False)
+        list_ = sorted(list_, key=lambda x: x['intensity'], reverse=True)
+        # List to json
+        json_list = json.dumps(list_, indent=4, ensure_ascii=False)
 
         return json_list
 
@@ -297,7 +336,8 @@ class Wifi:
 
         # If error
         if stderr:
-            return stderr.decode()
+            self.logger.info(stderr.decode())
+            return
 
         if not output:
             return "Not connected"
@@ -309,5 +349,5 @@ class Wifi:
         # Type change list to dictionary
         temp_list = ['ssid', 'intensity']
         output_list = dict(zip(temp_list, list_))
-            
+
         return json.dumps(output_list, ensure_ascii=False)
