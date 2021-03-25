@@ -53,11 +53,12 @@ class WifiHandler:
 
         # If already known, use wpa_cli
         if self._is_known_wifi(ssid):
-            self.logger.info("known ssid")
+            self.logger.info("Known ssid")
             id = self._id_wpa_cli(ssid)
             self._connect_wpa_cli(id)
         # Write to temp_wpa_supplicant.conf and check if psw is right
         else:
+            self.logger.info("New ssid")
             self._write_wpa_supplicant(ssid, psw, self.temp_conf)
             self._reconnect_wpa_supplicant(self.temp_conf)
 
@@ -70,7 +71,7 @@ class WifiHandler:
                 # Set priority of newly added ssid
                 id = self._id_wpa_cli(ssid)
                 self._set_priority(id, id)
-                self.logger.info("connected")
+                self.logger.info("Connected")
 
                 output['status'] = True
                 output['ssid'] = ssid
@@ -78,15 +79,17 @@ class WifiHandler:
             # If psw is wrong, just reconnect to wpa_supplicant.conf
             else:
                 self._reconnect_wpa_supplicant(self.wpa_supplicant_conf)
-                self.logger.info("wrong psw")
+                self.logger.info("Wrong psw")
                 output['status'] = False
+                output['ssid'] = None
+                output['ip_address'] = None
 
             # Return temp.conf to initial state
             self._erase_conf(self.temp_conf)
         
         # Auto_reconnect option
         id = self._id_wpa_cli(ssid)
-        self.logger.info(f"id: {id}, auto connect option: {auto_reconnect}")
+        self.logger.info(f"Auto connect option: {auto_reconnect}, Id: {id}")
         if not auto_reconnect:
             self._disable_wpa_cli(id)
         else:
@@ -105,7 +108,7 @@ class WifiHandler:
 
     # Reconfigure wpa_cli to update wpa_supplicant.conf and check psk
     def _is_psk_right(self):
-        proc = Popen('wpa_cli -iwlan0 reconfigure > /dev/null', shell=True)
+        proc = Popen('sudo wpa_cli -iwlan0 reconfigure > /dev/null', shell=True)
         proc.wait()
         sleep(1)
         proc = Popen(['../script/wpa.sh'], stdout=PIPE, stderr=PIPE)
@@ -114,22 +117,21 @@ class WifiHandler:
         if stderr:
             self.logger.info(stderr.decode())
             return
-
         return stdout.decode().rstrip()
 
     # Connect to network of the id with wpa_cli
     def _connect_wpa_cli(self, id):
-        proc = Popen(['wpa_cli', '-i', 'wlan0', 'select_network', id])
+        proc = Popen(['sudo', 'wpa_cli', '-i', 'wlan0', 'select_network', id])
         proc.wait()
 
     # Remove id from wpa_cli list
     def _remove_wpa_cli(self, id):
-        proc = Popen(['wpa_cli', '-i', 'wlan0', 'remove_network', id])
+        proc = Popen(['sudo', 'wpa_cli', '-i', 'wlan0', 'remove_network', id])
         proc.wait()
 
     # Get id of the ssid from wpa_cli list
     def _id_wpa_cli(self, ssid):
-        proc = Popen(f'wpa_cli -iwlan0 list_networks | grep {ssid}',
+        proc = Popen(f'sudo wpa_cli -iwlan0 list_networks | grep {ssid}',
                     shell=True, stdout=PIPE, stderr=PIPE)
         stdout, stderr = proc.communicate()
         output = stdout.decode()
@@ -138,7 +140,7 @@ class WifiHandler:
             self.logger.info(stderr.decode())
             return
         if not len(stdout):
-            self.logger.info(f"{ssid} is not known")
+            self.logger.info(f"Unknown ssid '{ssid}'")
             return -1
         return output.split()[0]
     
@@ -146,7 +148,7 @@ class WifiHandler:
     def _ip_wpa_cli(self):
         while True:
             sleep(1)
-            proc = Popen(f'wpa_cli -iwlan0 status | fgrep -A 1 wpa_state | cut -d "=" -f 2',
+            proc = Popen(f'sudo wpa_cli -iwlan0 status | fgrep -A 1 wpa_state | cut -d "=" -f 2',
                         shell=True, stdout=PIPE, stderr=PIPE)
             stdout, stderr = proc.communicate()
             output = stdout.decode()
@@ -159,29 +161,29 @@ class WifiHandler:
 
             # Wifi not connected
             if list_[0] != 'COMPLETED' and list_[0] != 'ASSOCIATING':
-                self.logger.info("wifi is not connected")
+                self.logger.info("Wifi is not connected")
                 return -1
             
             # Ip address is not shown yet
             if list_[1].find('.') != -1:
                 return list_[1]
-            self.logger.info("checking ip address")
+            self.logger.info("Checking ip address")
 
     # Disable network in wpa_cli list
     def _disable_wpa_cli(self, id):
-        proc1 = Popen(f'wpa_cli -iwlan0 disable {id} > /dev/null', shell=True)
+        proc1 = Popen(f'sudo wpa_cli -iwlan0 disable {id} > /dev/null', shell=True)
         proc1.wait()
-        proc2 = Popen('wpa_cli -iwlan0 save_config > /dev/null', shell=True)
+        proc2 = Popen('sudo wpa_cli -iwlan0 save_config > /dev/null', shell=True)
         proc2.wait()
-        self.logger.info(f"disabled wpa cli id {id}")
+        self.logger.info(f"Disabled wpa cli id {id}")
 
     # Enable network in wpa_cli list
     def _enable_wpa_cli(self, id):
-        proc1 = Popen(f'wpa_cli -iwlan0 enable {id} > /dev/null', shell=True)
+        proc1 = Popen(f'sudo wpa_cli -iwlan0 enable {id} > /dev/null', shell=True)
         proc1.wait()
-        proc2 = Popen('wpa_cli -iwlan0 save_config > /dev/null', shell=True)
+        proc2 = Popen('sudo wpa_cli -iwlan0 save_config > /dev/null', shell=True)
         proc2.wait()
-        self.logger.info(f"enabled wpa cli id {id}")
+        self.logger.info(f"Enabled wpa cli id {id}")
 
     # Kill and reconnect wpa_supplicant
     def _reconnect_wpa_supplicant(self, dir):
@@ -192,30 +194,30 @@ class WifiHandler:
         MyOut2 = Popen(['sudo', 'wpa_supplicant','-B', '-iwlan0', '-c', dir, '-f/var/log/wpa_supplicant.log'])
         MyOut2.wait()
         sleep(1)
-        self.logger.info(f"wpa supplicant connected {dir}")
+        self.logger.info(f"Wpa supplicant connected: {dir}")
 
     # Connect dhclient
     def _dhclient_connect(self):
         MyOut = Popen(['sudo', 'dhclient',  'wlan0'])
         MyOut.wait()
         sleep(1)
-        self.logger.info("dhclient connected")
+        self.logger.info("Dhclient connected")
 
     # Write ssid and password to wpa_supplicant.conf of the directory
     def _write_wpa_supplicant(self, ssid, psw, dir):
-        proc = Popen(f"wpa_passphrase '{ssid}' {psw} | sudo tee -a {dir}", shell=True)
+        proc = Popen(f"sudo wpa_passphrase '{ssid}' {psw} | sudo tee -a {dir} > /dev/null", shell=True)
         proc.wait()
-        self.logger.info("wpa supplicant write done")
+        self.logger.info("Wpa supplicant write done")
 
     # Set the priority of the id in wpa_cli list
     def _set_priority(self, id, priority):
-        proc = Popen(f'wpa_cli -iwlan0 set_network {id} priority {priority} > /dev/null', shell=True)
+        proc = Popen(f'sudo wpa_cli -iwlan0 set_network {id} priority {priority} > /dev/null', shell=True)
         proc.wait()
         sleep(1)
-        proc = Popen('wpa_cli -iwlan0 save_config > /dev/null', shell=True)
+        proc = Popen('sudo wpa_cli -iwlan0 save_config > /dev/null', shell=True)
         proc.wait()
         sleep(1)
-        self.logger.info("set priority done")
+        self.logger.info("Set priority done")
 
     def scan(self):
         """ Scan available wifi list.
@@ -263,7 +265,7 @@ class WifiHandler:
             numbers = re.findall('\\\\x[0-9a-fA-F][0-9a-fA-F]', ssid)
             if len(numbers):
                 ssid = self._utf8_to_str(ssid, numbers)
-                self.logger.info("unicode encoding done")
+                self.logger.info("Unicode encoding done")
 
             # Frequency & Intensity parsing
             info[0] = info[0].split('.')[0]

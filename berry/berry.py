@@ -1,8 +1,6 @@
 import berry.script.ble_scan as bl
-import berry.script.wifi_scan as wf
 import berry.script.modi_scan as md
-import berry.script.connected_wifi as c_wf
-
+from berry.module.wifi import WifiHandler
 
 def ble_list():
     print("scanning ble")
@@ -11,12 +9,14 @@ def ble_list():
 
 def wifi_list():
     print("scanning wifi")
-    return wf.scan_wifi()
+    wf = WifiHandler('~/smart-ai-api')
+    return wf.scan()
 
 
 def wifi_connected():
     print("scanning current wifi")
-    return c_wf.connected_wifi()
+    wf = WifiHandler('~/smart-ai-api')
+    return wf.info()
 
 
 def modi_list():

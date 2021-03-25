@@ -9,7 +9,7 @@ function poke {
 }
 
 function watch {
-    (poke) | wpa_cli | while read line
+    (poke) | sudo wpa_cli | while read line
     do
         case "$line" in
             *'CTRL-EVENT-ASSOC-REJECT'* | *'auth_failures'*)
@@ -27,7 +27,7 @@ function watch {
     done
 }
 
-wpa_cli disable_network 0 > /dev/null
-wpa_cli enable_network 0 > /dev/null
+sudo wpa_cli disable_network 0 > /dev/null
+sudo wpa_cli enable_network 0 > /dev/null
 
 watch
