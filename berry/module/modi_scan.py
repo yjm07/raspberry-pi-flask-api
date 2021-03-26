@@ -1,29 +1,11 @@
 import subprocess
-
-
-def num_modi_in_usb():
-
-    proc = subprocess.Popen("lsusb | grep 2fde:0002", 
-                            shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    stdout, stderr = proc.communicate()
-    output = stdout.decode()
-
-    # if error
-    if stderr != b'':
-        return stderr.decode()
-
-    if len(output) == 0:
-        return 0
-
-    _list = output.rstrip('\n').split('\n')
-    return len(_list)
+import json
 
 
 def print_modi_list():
-
     num = num_modi_in_usb()
 
-    if num <= 0:
+    if not num:
         return "no modi"
     
     import modi
@@ -45,4 +27,22 @@ def print_modi_list():
             else:
                 modi.update_module_firmware(target_ids=(m[2],))
 
-    return bundle_list
+    return json.dumps(bundle_list, indent=4)
+
+
+def num_modi_in_usb():
+    proc = subprocess.Popen("lsusb | grep 2fde:0002",
+                            shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    stdout, stderr = proc.communicate()
+    output = stdout.decode()
+
+    # If error
+    if stderr:
+        print(stderr.decode())
+        return stderr.decode()
+
+    if not len(output):
+        return 0
+
+    list_ = output.rstrip('\n').split('\n')
+    return len(list_)

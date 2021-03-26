@@ -331,7 +331,7 @@ class WifiHandler:
         :return: connected: json {"ssid": string, "intensity": string}
                  not connected: string "Not connected"
         """
-        proc = Popen("iw wlan0 link | egrep 'SSID|signal' | cut -d ' ' -f 2",
+        proc = Popen("sudo iw wlan0 link | egrep 'SSID|signal' | cut -d ' ' -f 2",
                     shell=True, stdout=PIPE, stderr=PIPE)
         stdout, stderr = proc.communicate()
         output = stdout.decode()
@@ -350,6 +350,6 @@ class WifiHandler:
 
         # Type change list to dictionary
         temp_list = ['ssid', 'intensity']
-        output_list = dict(zip(temp_list, list_))
+        output_dict = dict(zip(temp_list, list_))
 
-        return json.dumps(output_list, ensure_ascii=False)
+        return json.dumps(output_dict, ensure_ascii=False)
