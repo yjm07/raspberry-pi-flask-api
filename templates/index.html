@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+
+<head>
+   <meta charset="UTF-8">
+   <title>Smart-AI dashboard</title>
+   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+   <h1>Smart-AI Dashboard</h1>
+   <h2>system info</h2>
+   wifi: {{ wifi_info }}<br><br>
+   <button id="button" class="" onclick="location.href='http://smart-ai.local:5000/wifi'">
+      wifi lists
+   </button>
+   <button id="button" class="" onclick="location.href='http://smart-ai.local:5000/ble'">
+      ble lists
+   </button>
+   <button id="button" class="" onclick="location.href='http://smart-ai.local:5000/modi'">
+      modi lists
+   </button>
+   <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+
+</html>
