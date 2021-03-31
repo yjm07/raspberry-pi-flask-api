@@ -28,11 +28,6 @@ class WifiHandler:
         stream_handler.setLevel(logging.INFO)
         logger.addHandler(stream_handler)
 
-        # formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-        # file_handler = logging.FileHandler('/var/log/wifi.log')
-        # file_handler.setLevel(logging.INFO)
-        # file_handler.setFormatter(formatter)
-        # logger.addHandler(file_handler)
         return logger
     
     def connect(self, ssid, psw=None, auto_reconnect=False):
