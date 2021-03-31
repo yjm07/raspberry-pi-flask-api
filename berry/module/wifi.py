@@ -9,18 +9,16 @@ class WifiHandler:
     """ A module for Raspberry Pi wifi(interface: wlan0).
 
     Usage:
-        connect(ssid, psw, auto_reconnect_option)
+        connect(ssid, psw=optional, auto_reconnect_option=optional)
         scan()
         info()
     """
-    def __init__(self, user_dir:str):
-        self.user_directory = user_dir
-        self.ssid_list = set()
+    def __init__(self):
         self.logger = self.__init_logger()
-        # TODO: path fix
         self.wpa_supplicant_conf = '/etc/wpa_supplicant/wpa_supplicant.conf'
-        self.temp_conf = '../script/temp.conf'
-        self.temp_orign_conf = '../script/temp_origin.conf'
+        self.temp_conf = '/home/pi/smart-ai-api/berry/script/temp.conf'
+        self.temp_orign_conf = '/home/pi/smart-ai-api/berry/script/temp_origin.conf'
+        self.wpa_sh = '/home/pi/smart-ai-api/berry/script/wpa.sh'
 
     @staticmethod
     def __init_logger():
@@ -38,11 +36,11 @@ class WifiHandler:
         # logger.addHandler(file_handler)
         return logger
 
-    def connect(self, ssid, psw, auto_reconnect):
+    def connect(self, ssid, psw=None, auto_reconnect=False):
         """ Connect to ssid via psw. Auto_reconnect option needed.
 
         :param: {'ssid': string, 'password': string, 'auto_reconnect': boolean}
-        :return: json
+        :return: dict
         {
             "status": boolean,     // connected: true,         failed: false
             "ssid": string,        // connected: Wifi name,    failed: null
@@ -56,6 +54,11 @@ class WifiHandler:
             self.logger.info("Known ssid")
             id = self._id_wpa_cli(ssid)
             self._connect_wpa_cli(id)
+            self.logger.info("Connected")
+
+            output['status'] = True
+            output['ssid'] = ssid
+            output['ip_address'] = self._ip_wpa_cli()
         # Write to temp_wpa_supplicant.conf and check if psw is right
         else:
             self.logger.info("New ssid")
@@ -64,7 +67,6 @@ class WifiHandler:
 
             # If psw is right, add ssid to list and write to wpa_supplicant.conf
             if self._is_psk_right() == 'connected':
-                self.ssid_list.add(ssid)
                 self._write_wpa_supplicant(ssid, psw, self.wpa_supplicant_conf)
                 self._reconnect_wpa_supplicant(self.wpa_supplicant_conf)
 
@@ -91,15 +93,30 @@ class WifiHandler:
         id = self._id_wpa_cli(ssid)
         self.logger.info(f"Auto connect option: {auto_reconnect}, Id: {id}")
         if not auto_reconnect:
-            self._disable_wpa_cli(id)
+            # TODO: When no auto reconnect 
+            # self._disable_wpa_cli(id)
+            pass
         else:
             self._enable_wpa_cli(id)
 
-        return json.dumps(output, indent=4, ensure_ascii=False)
+        return output
 
     # Check if ssid is known
     def _is_known_wifi(self, ssid):
-        return ssid in self.ssid_list
+        proc = Popen(f"sudo wpa_cli -iwlan0 list_networks | awk '{{print$2}}' | grep '{ssid}'",
+                    shell=True, stdout=PIPE, stderr=PIPE)
+        stdout, stderr = proc.communicate()
+
+        if stderr:
+            self.logger.info(stderr.decode())
+            return
+
+        if not stdout:
+            return False
+
+        output = stdout.decode().split()
+
+        return ssid in output
 
     # Flush temp_wpa_supplicant.conf back to the state before
     def _erase_conf(self, dir):
@@ -111,12 +128,12 @@ class WifiHandler:
         proc = Popen('sudo wpa_cli -iwlan0 reconfigure > /dev/null', shell=True)
         proc.wait()
         sleep(1)
-        proc = Popen(['../script/wpa.sh'], stdout=PIPE, stderr=PIPE)
+        proc = Popen([self.wpa_sh], stdout=PIPE, stderr=PIPE)
         stdout, stderr = proc.communicate()
 
         if stderr:
             self.logger.info(stderr.decode())
-            return
+            
         return stdout.decode().rstrip()
 
     # Connect to network of the id with wpa_cli
@@ -223,15 +240,15 @@ class WifiHandler:
         """ Scan available wifi list.
 
         :param: None
-        :return: json
-        {
+        :return: list
+        [
             {   
                 "ssid": string,             // Wifi name
                 "frequency": string,        // 2.4Ghz: 2, 5Ghz: 5
                 "intensity": string,        // 0 ~ 70
                 "psk requirement": string   // public: off, private: on
             },
-        }
+        ]
         """
         proc = Popen("sudo iwlist wlan0 scan | fgrep -B 3 ESSID | cut -d ':' -f 2 | awk '{print$1}'",
                     shell=True, stdout=PIPE, stderr=PIPE)
@@ -280,10 +297,8 @@ class WifiHandler:
 
         # Sorting by quality
         list_ = sorted(list_, key=lambda x: x['intensity'], reverse=True)
-        # List to json
-        json_list = json.dumps(list_, indent=4, ensure_ascii=False)
 
-        return json_list
+        return list_
 
     # Encode Utf-8 to string
     def _utf8_to_str(self, ssid, numbers):
@@ -328,7 +343,7 @@ class WifiHandler:
         """ SSID, intensity of connected wifi.
 
         :param: None
-        :return: connected: json {"ssid": string, "intensity": string}
+        :return: connected: dict {"ssid": string, "intensity": string}
                  not connected: string "Not connected"
         """
         proc = Popen("sudo iw wlan0 link | egrep 'SSID|signal' | cut -d ' ' -f 2",
@@ -352,4 +367,4 @@ class WifiHandler:
         temp_list = ['ssid', 'intensity']
         output_dict = dict(zip(temp_list, list_))
 
-        return json.dumps(output_dict, ensure_ascii=False)
+        return output_dict
