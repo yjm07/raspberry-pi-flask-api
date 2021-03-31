@@ -1,4 +1,4 @@
-from flask import Flask, render_template
+from flask import Flask, render_template, request
 import berry.berry as berry
 import json
 
@@ -44,15 +44,15 @@ def get_wifi_current():
     return json.dumps(berry.wifi_current())
 
 
-@app.route('/wifi/connect/<string:ssid><string:psw><string:auto_reconnect>')
-def get_wifi_connect(ssid, psw=None, auto_reconnect=False):
+@app.route('/wifi/connect')
+def get_wifi_connect():
     """ Connect to ssid via psw with auto reconnect option.
 
     Args:
         {
             'ssid': string,
-            'password': string,         // optional, default: None
-            'auto_reconnect': boolean   // optional, default: False
+            'psw': string,   // optional, default: None
+            'opt': boolean   // optional, default: False
         }
 
     Returns: json
@@ -62,6 +62,9 @@ def get_wifi_connect(ssid, psw=None, auto_reconnect=False):
             "ip address": string   // connected: 172.xx.xx.xx, failed: null
         }
     """
+    ssid = request.args.get('ssid', type=str)
+    psw = request.args.get('psw', default=None, type=str)
+    auto_reconnect = request.args.get('opt', default=True, type=bool)
     return json.dumps(berry.wifi_connect(ssid, psw, auto_reconnect), indent=4, ensure_ascii=False)
 
 

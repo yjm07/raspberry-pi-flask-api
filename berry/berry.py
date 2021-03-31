@@ -21,7 +21,7 @@ def wifi_current():
 
 
 def wifi_connect(ssid, psw=None, auto_reconnect=True):
-    print("connecting wifi")
+    print(f"connecting wifi...ssid:'{ssid}' psw:'{psw}' opt: '{auto_reconnect}'")
     wf = WifiHandler()
     return wf.connect(ssid, psw, auto_reconnect)
 
