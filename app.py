@@ -44,7 +44,7 @@ def get_wifi_current():
     return json.dumps(berry.wifi_current())
 
 
-@app.route('/wifi/connect')
+@app.route('/wifi/connect', methods=['POST'], defaults={'psw': None, 'opt': True})
 def get_wifi_connect():
     """ Connect to ssid via psw with auto reconnect option.
 
@@ -52,7 +52,7 @@ def get_wifi_connect():
         {
             'ssid': string,
             'psw': string,   // optional, default: None
-            'opt': boolean   // optional, default: False
+            'opt': boolean   // optional, default: True
         }
 
     Returns: json
@@ -62,9 +62,9 @@ def get_wifi_connect():
             "ip address": string   // connected: 172.xx.xx.xx, failed: null
         }
     """
-    ssid = request.args.get('ssid', type=str)
-    psw = request.args.get('psw', default=None, type=str)
-    auto_reconnect = request.args.get('opt', default=True, type=bool)
+    ssid = request.form["ssid"]
+    psw = request.form["psw"]
+    auto_reconnect = request.form["opt"]
     return json.dumps(berry.wifi_connect(ssid, psw, auto_reconnect), indent=4, ensure_ascii=False)
 
 
