@@ -132,7 +132,7 @@ def power_off():
 
 
 @app.route('/power-reboot')
-def power_off():
+def power_reboot():
     """ Reboot the machine.
 
     Args: None
