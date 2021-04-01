@@ -38,6 +38,7 @@ class ModiHandler:
 
         for m in self.bundle_list:
             if not m[3]:
+                print("Update start")
                 if m[0] == 'network':
                     # TODO: Network module update 
                     # modi.update_network_firmware()
@@ -46,10 +47,14 @@ class ModiHandler:
                     modi.update_module_firmware(target_ids=(m[2],))
                 # Module name and Id
                 list_.append((m[0], m[2]))
+        # All modules are already up to date
+        if not len(list_):
+            return "Update not needed"
         # List to dict list
+        print("Update done")
         tmp_list = ['Module', 'Id']
         updated_list = list(dict(zip(tmp_list, m)) for m in list_)
-        return list_
+        return updated_list
 
     # Number of Modi connected to usb.
     def _num_modi_in_usb(self):
