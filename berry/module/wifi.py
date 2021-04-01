@@ -14,14 +14,13 @@ class WifiHandler:
         info()
     """
     def __init__(self):
-        self.logger = self.__init_logger()
         self.wpa_supplicant_conf = '/etc/wpa_supplicant/wpa_supplicant.conf'
         self.temp_conf = '/home/pi/smart-ai-api/berry/script/temp.conf'
         self.temp_orign_conf = '/home/pi/smart-ai-api/berry/script/temp_origin.conf'
         self.wpa_sh = '/home/pi/smart-ai-api/berry/script/wpa.sh'
+        self.logger = self._init_logger()
 
-    @staticmethod
-    def __init_logger():
+    def _init_logger(self):
         logger = logging.getLogger('Dashboard Wifi Logger')
         logger.setLevel(logging.INFO)
 
@@ -30,7 +29,7 @@ class WifiHandler:
         logger.addHandler(stream_handler)
 
         return logger
-
+    
     def connect(self, ssid, psw=None, auto_reconnect=False):
         """ Connect to ssid via psw. Auto_reconnect option needed.
 
@@ -54,35 +53,42 @@ class WifiHandler:
             output['status'] = True
             output['ssid'] = ssid
             output['ip_address'] = self._ip_wpa_cli()
+        
         # Write to temp_wpa_supplicant.conf and check if psw is right
         else:
-            self.logger.info("New ssid")
-            self._write_wpa_supplicant(ssid, psw, self.temp_conf)
-            self._reconnect_wpa_supplicant(self.temp_conf)
-
-            # If psw is right, add ssid to list and write to wpa_supplicant.conf
-            if self._is_psk_right() == 'connected':
-                self._write_wpa_supplicant(ssid, psw, self.wpa_supplicant_conf)
-                self._reconnect_wpa_supplicant(self.wpa_supplicant_conf)
-
-                # Set priority of newly added ssid
-                id = self._id_wpa_cli(ssid)
-                self._set_priority(id, id)
-                self.logger.info("Connected")
-
-                output['status'] = True
-                output['ssid'] = ssid
-                output['ip_address'] = self._ip_wpa_cli()
-            # If psw is wrong, just reconnect to wpa_supplicant.conf
-            else:
-                self._reconnect_wpa_supplicant(self.wpa_supplicant_conf)
-                self.logger.info("Wrong psw")
+            if not psw or len(psw) < 8:
+                self.logger.info("Password too short >= 8")
                 output['status'] = False
                 output['ssid'] = None
                 output['ip_address'] = None
+            else:
+                self.logger.info("New ssid")
+                self._write_wpa_supplicant(ssid, psw, self.temp_conf)
+                self._reconnect_wpa_supplicant(self.temp_conf)
 
-            # Return temp.conf to initial state
-            self._erase_conf(self.temp_conf)
+                # If psw is right, add ssid to list and write to wpa_supplicant.conf
+                if self._is_psk_right() == 'connected':
+                    self._write_wpa_supplicant(ssid, psw, self.wpa_supplicant_conf)
+                    self._reconnect_wpa_supplicant(self.wpa_supplicant_conf)
+
+                    # Set priority of newly added ssid
+                    id = self._id_wpa_cli(ssid)
+                    self._set_priority(id, id)
+                    self.logger.info("Connected")
+
+                    output['status'] = True
+                    output['ssid'] = ssid
+                    output['ip_address'] = self._ip_wpa_cli()
+                # If psw is wrong, just reconnect to wpa_supplicant.conf
+                else:
+                    self._reconnect_wpa_supplicant(self.wpa_supplicant_conf)
+                    self.logger.info("Wrong psw")
+                    output['status'] = False
+                    output['ssid'] = None
+                    output['ip_address'] = None
+
+                # Return temp.conf to initial state
+                self._erase_conf(self.temp_conf)
         
         # Auto_reconnect option
         id = self._id_wpa_cli(ssid)
