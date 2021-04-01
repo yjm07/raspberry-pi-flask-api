@@ -1,5 +1,4 @@
 import subprocess
-import json
 
 
 def scan_ble():
@@ -14,4 +13,4 @@ def scan_ble():
         return stderr.decode()
 
     list_ = list(set(output.split()))
-    return json.dumps(list_)
+    return list_

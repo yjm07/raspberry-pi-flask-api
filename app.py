@@ -24,7 +24,7 @@ def get_wifi_list():
                 "ssid": string,             // Wifi name
                 "frequency": string,        // 2.4Ghz: 2, 5Ghz: 5
                 "intensity": string,        // 0 ~ 70
-                "psk requirement": string   // public: off, private: on
+                "psk-requirement": string   // public: off, private: on
             },
         ]
     """
@@ -59,7 +59,7 @@ def get_wifi_connect():
         {
             "status": boolean,     // connected: true,         failed: false
             "ssid": string,        // connected: Wifi name,    failed: null
-            "ip address": string   // connected: 172.xx.xx.xx, failed: null
+            "ip-address": string   // connected: 172.xx.xx.xx, failed: null
         }
     """
     ssid = request.form["ssid"]
@@ -75,9 +75,7 @@ def get_ble_list():
     Args: None
 
     Returns: json
-        [
-            'MODI_uuid': string,     // MODI_403D8B7C
-        ]
+        ['MODI_uuid': string, ]     // MODI_403D8B7C
     """
     return json.dumps(berry.ble_list())
 
@@ -96,7 +94,7 @@ def get_modi_list():
                 "Module": string,           // "network"
                 "Uuid": int,                // 2813171425
                 "Id": int,                  // 1761
-                "Is up to date": boolean    // false
+                "Is-up-to-date": boolean    // false
             },
         ]
     """
@@ -120,6 +118,28 @@ def run_modi_update():
         ]
     """
     return json.dumps(berry.modi_update(), indent=4)
+
+
+@app.route('/power-off')
+def power_off():
+    """ Shutdown the machine.
+
+    Args: None
+
+    Returns: None
+    """
+    return berry.power_off()
+
+
+@app.route('/power-reboot')
+def power_off():
+    """ Reboot the machine.
+
+    Args: None
+
+    Returns: None
+    """
+    return berry.power_reboot()
 
 
 def run():
