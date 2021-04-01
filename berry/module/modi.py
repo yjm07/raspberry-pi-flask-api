@@ -27,7 +27,7 @@ class ModiHandler:
 
     # Return list of connected Modi info list.
     def print_modi_list(self):
-        temp_list = ['Module', 'Uuid', 'Id', 'Is up to date']
+        temp_list = ['Module', 'Uuid', 'Id', 'Is-up-to-date']
         _bundle_list = list(dict(zip(temp_list, m)) for m in self.bundle_list)
 
         return _bundle_list

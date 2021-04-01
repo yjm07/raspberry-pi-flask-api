@@ -1,6 +1,7 @@
-import berry.module.ble_scan as bl
 from berry.module.modi import ModiHandler
 from berry.module.wifi import WifiHandler
+import berry.module.ble_scan as bl
+import berry.module.power as pw
 
 
 def ble_list():
@@ -36,3 +37,13 @@ def modi_update():
     print("checking modi update")
     md = ModiHandler()
     return md.update_modi()
+
+
+def power_off():
+    print("power off")
+    return pw.off()
+
+
+def power_reboot():
+    print("power reboot")
+    return pw.reboot()

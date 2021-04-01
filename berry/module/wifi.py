@@ -38,7 +38,7 @@ class WifiHandler:
         {
             "status": boolean,     // connected: true,         failed: false
             "ssid": string,        // connected: Wifi name,    failed: null
-            "ip address": string   // connected: 172.xx.xx.xx, failed: null
+            "ip-address": string   // connected: 172.xx.xx.xx, failed: null
         }
         """
         output = dict()
@@ -52,7 +52,7 @@ class WifiHandler:
 
             output['status'] = True
             output['ssid'] = ssid
-            output['ip_address'] = self._ip_wpa_cli()
+            output['ip-address'] = self._ip_wpa_cli()
         
         # Write to temp_wpa_supplicant.conf and check if psw is right
         else:
@@ -60,7 +60,7 @@ class WifiHandler:
                 self.logger.info("Password too short >= 8")
                 output['status'] = False
                 output['ssid'] = None
-                output['ip_address'] = None
+                output['ip-address'] = None
             else:
                 self.logger.info("New ssid")
                 self._write_wpa_supplicant(ssid, psw, self.temp_conf)
@@ -78,14 +78,14 @@ class WifiHandler:
 
                     output['status'] = True
                     output['ssid'] = ssid
-                    output['ip_address'] = self._ip_wpa_cli()
+                    output['ip-address'] = self._ip_wpa_cli()
                 # If psw is wrong, just reconnect to wpa_supplicant.conf
                 else:
                     self._reconnect_wpa_supplicant(self.wpa_supplicant_conf)
                     self.logger.info("Wrong psw")
                     output['status'] = False
                     output['ssid'] = None
-                    output['ip_address'] = None
+                    output['ip-address'] = None
 
                 # Return temp.conf to initial state
                 self._erase_conf(self.temp_conf)
@@ -247,7 +247,7 @@ class WifiHandler:
                 "ssid": string,             // Wifi name
                 "frequency": string,        // 2.4Ghz: 2, 5Ghz: 5
                 "intensity": string,        // 0 ~ 70
-                "psk requirement": string   // public: off, private: on
+                "psk-requirement": string   // public: off, private: on
             },
         ]
         """
@@ -291,7 +291,7 @@ class WifiHandler:
 
             # Type change 'ssid' & 'info' to dictionary
             info.insert(0, ssid)
-            temp_list = ['ssid', 'frequecy', 'intensity', 'psk requirement']
+            temp_list = ['ssid', 'frequecy', 'intensity', 'psk-requirement']
             dict_info = dict(zip(temp_list, info))
 
             list_.append(dict_info)
