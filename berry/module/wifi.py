@@ -13,23 +13,27 @@ class WifiHandler:
         scan()
         info()
     """
+    def __new__(cls, *args, **kargs):
+        if not hasattr(cls, "_instance"):
+            cls._instance = super().__new__(cls)
+        return cls._instance
+
     def __init__(self):
-        self.wpa_supplicant_conf = '/etc/wpa_supplicant/wpa_supplicant.conf'
-        self.temp_conf = '/home/pi/smart-ai-api/berry/script/temp.conf'
-        self.temp_orign_conf = '/home/pi/smart-ai-api/berry/script/temp_origin.conf'
-        self.wpa_sh = '/home/pi/smart-ai-api/berry/script/wpa.sh'
-        self.logger = self._init_logger()
+        cls = type(self)
+        if not hasattr(cls, '_init'):
+            cls._init = True
+            self.wpa_supplicant_conf = '/etc/wpa_supplicant/wpa_supplicant.conf'
+            self.temp_conf = '/home/pi/smart-ai-api/berry/script/temp.conf'
+            self.temp_orign_conf = '/home/pi/smart-ai-api/berry/script/temp_origin.conf'
+            self.wpa_sh = '/home/pi/smart-ai-api/berry/script/wpa.sh'
 
-    def _init_logger(self):
-        logger = logging.getLogger('Dashboard Wifi Logger')
-        logger.setLevel(logging.INFO)
+            self.logger = logging.getLogger('Dashboard Wifi Logger')
+            self.logger.setLevel(logging.INFO)
 
-        stream_handler = logging.StreamHandler()
-        stream_handler.setLevel(logging.INFO)
-        logger.addHandler(stream_handler)
+            self.stream_handler = logging.StreamHandler()
+            self.stream_handler.setLevel(logging.INFO)
+            self.logger.addHandler(self.stream_handler)
 
-        return logger
-    
     def connect(self, ssid, psw=None, auto_reconnect=False):
         """ Connect to ssid via psw. Auto_reconnect option needed.
 
@@ -262,13 +266,17 @@ class WifiHandler:
             self.logger.info(stderr.decode())
             return
 
-        for text in output.split('--'):
+        list_wifi = output.split('--')
+        self.logger.info(f"Number of ssids: {len(list_wifi)}")
+
+        for text in list_wifi:
             line = text.split('\"')
             info = line[0].split()
             ssid = line[1]
 
             # If no ssid
             if not ssid:
+                self.logger.info("Blank ssid")
                 continue
             
             # If same ssid
@@ -282,8 +290,8 @@ class WifiHandler:
             # If character has unicode(UTF-8)
             numbers = re.findall('\\\\x[0-9a-fA-F][0-9a-fA-F]', ssid)
             if len(numbers):
+                self.logger.info("Encoding unicode to utf-8")
                 ssid = self._utf8_to_str(ssid, numbers)
-                self.logger.info("Unicode encoding done")
 
             # Frequency & Intensity parsing
             info[0] = info[0].split('.')[0]
@@ -295,6 +303,7 @@ class WifiHandler:
             dict_info = dict(zip(temp_list, info))
 
             list_.append(dict_info)
+        self.logger.info("Scanning wifi done")
 
         # Sorting by quality
         list_ = sorted(list_, key=lambda x: x['intensity'], reverse=True)
