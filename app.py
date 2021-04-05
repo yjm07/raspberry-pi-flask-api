@@ -1,4 +1,5 @@
 from flask import Flask, render_template, request
+import berry.script.template_updater
 import berry.berry as berry
 import json
 
