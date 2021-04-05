@@ -9,6 +9,7 @@ class WifiHandler:
     """ A module for Raspberry Pi wifi(interface: wlan0).
 
     Usage:
+        is_known(ssid)
         connect(ssid, psw=optional, auto_reconnect_option=optional)
         scan()
         info()
@@ -34,7 +35,24 @@ class WifiHandler:
             self.stream_handler.setLevel(logging.INFO)
             self.logger.addHandler(self.stream_handler)
 
-    def connect(self, ssid, psw=None, auto_reconnect=False):
+    # Check if ssid is known
+    def is_known(self, ssid):
+        proc = Popen(f"sudo wpa_cli -iwlan0 list_networks | awk '{{print$2}}' | grep '{ssid}'",
+                    shell=True, stdout=PIPE, stderr=PIPE)
+        stdout, stderr = proc.communicate()
+
+        if stderr:
+            self.logger.info(stderr.decode())
+            return
+
+        if not stdout:
+            return False
+
+        output = stdout.decode().split()
+
+        return ssid in output
+
+    def connect(self, is_known, ssid, psw=None, auto_reconnect=False):
         """ Connect to ssid via psw. Auto_reconnect option needed.
 
         :param: {'ssid': string, 'password': string, 'auto_reconnect': boolean}
@@ -48,7 +66,7 @@ class WifiHandler:
         output = dict()
 
         # If already known, use wpa_cli
-        if self._is_known_wifi(ssid):
+        if is_known:
             self.logger.info("Known ssid")
             id = self._id_wpa_cli(ssid)
             self._connect_wpa_cli(id)
@@ -105,23 +123,6 @@ class WifiHandler:
             self._enable_wpa_cli(id)
 
         return output
-
-    # Check if ssid is known
-    def _is_known_wifi(self, ssid):
-        proc = Popen(f"sudo wpa_cli -iwlan0 list_networks | awk '{{print$2}}' | grep '{ssid}'",
-                    shell=True, stdout=PIPE, stderr=PIPE)
-        stdout, stderr = proc.communicate()
-
-        if stderr:
-            self.logger.info(stderr.decode())
-            return
-
-        if not stdout:
-            return False
-
-        output = stdout.decode().split()
-
-        return ssid in output
 
     # Flush temp_wpa_supplicant.conf back to the state before
     def _erase_conf(self, dir):
