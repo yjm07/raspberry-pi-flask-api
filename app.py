@@ -63,9 +63,10 @@ def get_wifi_connect():
             "ip-address": string   // connected: 172.xx.xx.xx, failed: null
         }
     """
-    ssid = request.form["ssid"]
-    psw = request.form["psw"]
-    auto_reconnect = request.form["opt"]
+    input_data = request.get_json()
+    ssid = input_data["ssid"]
+    psw = input_data["psw"]
+    auto_reconnect = input_data["opt"]
     return json.dumps(berry.wifi_connect(ssid, psw, auto_reconnect), indent=4, ensure_ascii=False)
 
 
