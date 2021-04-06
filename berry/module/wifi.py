@@ -1,7 +1,6 @@
 from subprocess import Popen, PIPE
 from time import sleep
 import re
-import json
 import logging
 
 

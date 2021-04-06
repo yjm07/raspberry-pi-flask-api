@@ -1,4 +1,5 @@
 from flask import Flask, render_template, request
+import berry.script.template_updater
 import berry.berry as berry
 import json
 
@@ -102,6 +103,7 @@ def wifi_connect_unknown():
     ssid = input_data["ssid"]
     psw = input_data["psw"]
     auto_reconnect = input_data["opt"]
+    
     return json.dumps(berry.wifi_connect(False, ssid, psw, auto_reconnect), indent=4, ensure_ascii=False)
 
 
