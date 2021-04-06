@@ -17,7 +17,7 @@ def index():
 def get_wifi_list():
     """ Scan available wifi list.
 
-    Args: None
+    Usage: /wifi/list
 
     Returns: json
         [
@@ -36,7 +36,7 @@ def get_wifi_list():
 def get_wifi_current():
     """ SSID, intensity of connected wifi.
 
-    Args: None
+    Usage: /wifi/info
 
     Returns:
         connected: json {"ssid": string, "intensity": string}
@@ -45,16 +45,52 @@ def get_wifi_current():
     return json.dumps(berry.wifi_current())
 
 
-@app.route('/wifi/connect', methods=['POST'], defaults={'psw': None, 'opt': True})
-def get_wifi_connect():
+@app.route('/wifi/is-known/<ssid>')
+def is_wifi_known(ssid):
+    """ Check if ssid is known.
+
+    Usage: /wifi/known/wifi_name
+
+    Returns: json: boolean
+    """
+    return json.dumps(berry.wifi_is_known(ssid))
+
+
+@app.route('/wifi/connect/known', methods=['POST'])
+def wifi_connect_known():
     """ Connect to ssid via psw with auto reconnect option.
 
-    Args:
+    Usage: /wifi/connect/known
+            body:
+            {
+                "ssid": "wifi name",
+                "opt": true/false
+            }
+
+    Returns: json
         {
-            'ssid': string,
-            'psw': string,   // optional, default: None
-            'opt': boolean   // optional, default: True
+            "status": boolean,     // connected: true,         failed: false
+            "ssid": string,        // connected: Wifi name,    failed: null
+            "ip-address": string   // connected: 172.xx.xx.xx, failed: null
         }
+    """
+    input_data = request.get_json()
+    ssid = input_data["ssid"]
+    auto_reconnect = input_data["opt"]
+    return json.dumps(berry.wifi_connect(True, ssid, None, auto_reconnect), indent=4, ensure_ascii=False)
+
+
+@app.route('/wifi/connect/unknown', methods=['POST'])
+def wifi_connect_unknown():
+    """ Connect to ssid via psw with auto reconnect option.
+
+    Usage: /wifi/connect/unknown
+            body:
+            {
+                "ssid": "wifi name",
+                "psw": "password",
+                "opt": true/false
+            }
 
     Returns: json
         {
@@ -67,14 +103,15 @@ def get_wifi_connect():
     ssid = input_data["ssid"]
     psw = input_data["psw"]
     auto_reconnect = input_data["opt"]
-    return json.dumps(berry.wifi_connect(ssid, psw, auto_reconnect), indent=4, ensure_ascii=False)
+    
+    return json.dumps(berry.wifi_connect(False, ssid, psw, auto_reconnect), indent=4, ensure_ascii=False)
 
 
 @app.route('/ble')
 def get_ble_list():
     """ Scan available Modi ble uuid.
 
-    Args: None
+    Usage: /ble
 
     Returns: json
         ['MODI_uuid': string, ]     // MODI_403D8B7C
@@ -86,7 +123,7 @@ def get_ble_list():
 def get_modi_list():
     """ Scan connected Modi list.
 
-    Args: None
+    Usage: /modi/list
 
     Returns:
         disconnected: string "No Modi"
@@ -107,7 +144,7 @@ def get_modi_list():
 def run_modi_update():
     """ Check and run update Modi modules if needed.
 
-    Args: None
+    Usage: /modi/update
 
     Returns:
         disconnected: string "No Modi"
@@ -126,7 +163,7 @@ def run_modi_update():
 def power_off():
     """ Shutdown the machine.
 
-    Args: None
+    Usage: /power-off
 
     Returns: None
     """
@@ -137,7 +174,7 @@ def power_off():
 def power_reboot():
     """ Reboot the machine.
 
-    Args: None
+    Usage: /power-reboot
 
     Returns: None
     """

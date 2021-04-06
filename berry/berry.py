@@ -21,10 +21,16 @@ def wifi_current():
     return wf.info()
 
 
-def wifi_connect(ssid, psw=None, auto_reconnect=True):
-    print(f"connecting wifi...ssid:'{ssid}' psw:'{psw}' opt: '{auto_reconnect}'")
+def wifi_is_known(ssid):
+    print(f"checking wifi...{ssid}")
     wf = WifiHandler()
-    return wf.connect(ssid, psw, auto_reconnect)
+    return wf.is_known(ssid)
+
+
+def wifi_connect(is_known, ssid, psw=None, auto_reconnect=True):
+    print(f"connecting wifi...known: {is_known} ssid:'{ssid}' psw:{psw} opt: {auto_reconnect}")
+    wf = WifiHandler()
+    return wf.connect(is_known, ssid, psw, auto_reconnect)
 
 
 def modi_list():
