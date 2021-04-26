@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="24" height="24" viewBox="0 0 24 24">
+    <defs>
+        <path id="2cdlxeltlb" d="M0.381 0.248L8.194 0.248 8.194 8.061 0.381 8.061z"/>
+        <path id="usshxmq95d" d="M0 0.825L16.576 0.825 16.576 8 0 8z"/>
+        <filter id="87fctgsvra">
+            <feColorMatrix in="SourceGraphic" values="0 0 0 0 1.000000 0 0 0 0 1.000000 0 0 0 0 1.000000 0 0 0 1.000000 0"/>
+        </filter>
+    </defs>
+    <g fill="none" fill-rule="evenodd">
+        <g>
+            <g filter="url(#87fctgsvra)" transform="translate(-1417 -162) translate(1401 146)">
+                <g>
+                    <path d="M0 0H24V24H0z" transform="translate(16 16)"/>
+                    <g>
+                        <path fill="#7873F0" d="M8.288 8.063c-1.74 0-3.157-1.416-3.157-3.156 0-1.741 1.416-3.157 3.157-3.157 1.74 0 3.156 1.416 3.156 3.157 0 1.74-1.416 3.156-3.156 3.156" transform="translate(16 16) translate(4 3)"/>
+                        <g transform="translate(16 16) translate(4 3) translate(4 .752)">
+                            <mask id="4yvho9abec" fill="#fff">
+                                <use xlink:href="#2cdlxeltlb"/>
+                            </mask>
+                            <path fill="#7873F0" d="M4.288.248C2.13.248.381 1.997.381 4.155c0 2.157 1.75 3.906 3.907 3.906s3.906-1.75 3.906-3.906c0-2.158-1.749-3.907-3.906-3.907m0 1.5c1.327 0 2.406 1.08 2.406 2.407 0 1.326-1.079 2.406-2.406 2.406-1.327 0-2.407-1.08-2.407-2.406 0-1.327 1.08-2.407 2.407-2.407" mask="url(#4yvho9abec)"/>
+                        </g>
+                        <path fill="#7873F0" d="M.784 16.002c.288-3.19 2.388-5.675 4.929-5.675h5.15c2.542 0 4.642 2.485 4.93 5.675H.783z" transform="translate(16 16) translate(4 3)"/>
+                        <g transform="translate(16 16) translate(4 3) translate(0 8.752)">
+                            <mask id="w1p60l77pe" fill="#fff">
+                                <use xlink:href="#usshxmq95d"/>
+                            </mask>
+                            <path fill="#7873F0" d="M10.864.825H5.713C2.558.825 0 4.037 0 8h16.576c0-3.963-2.557-7.175-5.712-7.175m0 1.5c1.937 0 3.574 1.771 4.063 4.175H1.65c.489-2.404 2.125-4.175 4.063-4.175h5.15" mask="url(#w1p60l77pe)"/>
+                        </g>
+                    </g>
+                </g>
+            </g>
+        </g>
+    </g>
+</svg>
